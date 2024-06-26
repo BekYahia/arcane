@@ -14,6 +14,7 @@ func Init(input string) *Lexer {
 	l.readChar()
 	return l
 }
+
 func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
@@ -24,16 +25,46 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
-func (l *Lexer) NextToken() token.Token {
-	var tok token.Token
-	if l.ch == 0 {
-		return initToken(token.EOF, "")
+func (l *Lexer) readIdentifier() string {
+	positionOfFirstLetter := l.position
+	for isLetter(l.ch) {
+		l.readChar()
 	}
+	return l.input[positionOfFirstLetter:l.position]
+}
 
-	for key, value := range token.Tokens {
-		if string(l.ch) == value {
-			tok = initToken(key, token.TokenLiteral(value))
-			break
+func (l *Lexer) readNumber() string {
+	positionOfFirstNumber := l.position
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[positionOfFirstNumber:l.position]
+}
+
+// Note: for letters and digits lexer position is advanced within their respective function
+func (l *Lexer) NextToken() token.Token {
+	l.skipWhiteSpace()
+	var tok token.Token
+
+	switch {
+	case isLetter(l.ch):
+		tok.Literal = token.TokenLiteral(l.readIdentifier())
+		tok.Type = token.LookupIdentifier(string(tok.Literal))
+		return tok
+	case isDigit(l.ch):
+		tok.Literal = token.TokenLiteral(l.readNumber())
+		tok.Type = token.INT
+		return tok
+	case l.ch == 0:
+		tok = initToken(token.EOF, "")
+	default:
+		tok = initToken(token.ILLEGAL, token.TokenLiteral(l.ch))
+
+		for key, value := range token.Tokens {
+			if string(l.ch) == value {
+				tok = initToken(key, token.TokenLiteral(value))
+				break
+			}
 		}
 	}
 
@@ -41,9 +72,23 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+func (l *Lexer) skipWhiteSpace() {
+	for l.ch == ' ' || l.ch == '\n' || l.ch == 't' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
 func initToken(tokenType token.TokenType, literal token.TokenLiteral) token.Token {
 	return token.Token{
 		Type:    tokenType,
 		Literal: literal,
 	}
+}
+
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
