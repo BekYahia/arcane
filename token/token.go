@@ -18,6 +18,12 @@ const (
 	DIVIDE
 	MODULES
 
+	NOT
+	EQUAL
+	NOT_EQUAL
+	GT
+	LT
+
 	//Delimiters
 	COMMA
 	SEMICOLON
@@ -25,12 +31,17 @@ const (
 
 	LEFT_PARENTHESIS
 	RIGHT_PARENTHESIS
-	LEFT_BRACKETS
-	RIGHT_BRACKETS
+	LEFT_CURLY_BRACKETS
+	RIGHT_CURLY_BRACKETS
 
 	//keywords
 	FUNCTION
 	LET
+	IF
+	ELSE
+	TRUE
+	FALSE
+	RETURN
 )
 
 var Tokens = map[TokenType]string{
@@ -51,24 +62,41 @@ var Tokens = map[TokenType]string{
 	DIVIDE:   "/",
 	MODULES:  "%",
 
+	NOT:       "!",
+	EQUAL:     "==",
+	NOT_EQUAL: "!=",
+
+	GT: ">",
+	LT: "<",
+
 	//Delimiters
 	COMMA:     ",",
 	SEMICOLON: ";",
 	DOT:       ".",
 
-	LEFT_PARENTHESIS:  "(",
-	RIGHT_PARENTHESIS: ")",
-	LEFT_BRACKETS:     "{",
-	RIGHT_BRACKETS:    "}",
+	LEFT_PARENTHESIS:     "(",
+	RIGHT_PARENTHESIS:    ")",
+	LEFT_CURLY_BRACKETS:  "{",
+	RIGHT_CURLY_BRACKETS: "}",
 
 	//keywords
 	FUNCTION: "FUNCTION",
 	LET:      "LET",
+	IF:       "IF",
+	ELSE:     "ELSE",
+	TRUE:     "TRUE",
+	FALSE:    "FALSE",
+	RETURN:   "RETURN",
 }
 
 var keywords = map[string]TokenType{
-	"fn":  FUNCTION,
-	"let": LET,
+	"fn":     FUNCTION,
+	"let":    LET,
+	"if":     IF,
+	"else":   ELSE,
+	"true":   TRUE,
+	"false":  FALSE,
+	"return": RETURN,
 }
 
 func LookupIdentifier(ident string) TokenType {

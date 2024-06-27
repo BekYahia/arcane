@@ -25,6 +25,13 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readPosition]
+}
+
 func (l *Lexer) readIdentifier() string {
 	positionOfFirstLetter := l.position
 	for isLetter(l.ch) {
@@ -62,7 +69,14 @@ func (l *Lexer) NextToken() token.Token {
 
 		for key, value := range token.Tokens {
 			if string(l.ch) == value {
-				tok = initToken(key, token.TokenLiteral(value))
+				switch value {
+				case "=": // ==
+					tok = l.makeDoubleToken(key, token.ASSIGN, token.EQUAL)
+				case "!": // (!=
+					tok = l.makeDoubleToken(key, token.ASSIGN, token.NOT_EQUAL)
+				default:
+					tok = initToken(key, token.TokenLiteral(value))
+				}
 				break
 			}
 		}
@@ -73,7 +87,7 @@ func (l *Lexer) NextToken() token.Token {
 }
 
 func (l *Lexer) skipWhiteSpace() {
-	for l.ch == ' ' || l.ch == '\n' || l.ch == 't' || l.ch == '\r' {
+	for l.ch == ' ' || l.ch == '\n' || l.ch == '\t' || l.ch == '\r' || l.ch == '\v' || l.ch == '\f' {
 		l.readChar()
 	}
 }
@@ -91,4 +105,14 @@ func isLetter(ch byte) bool {
 
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+func (l *Lexer) makeDoubleToken(firstCharType token.TokenType, secondCharType token.TokenType, doubleCharType token.TokenType) token.Token {
+	ch := string(l.ch)
+	secondCh := token.Tokens[secondCharType]
+	if string(l.peekChar()) == secondCh {
+		l.readChar()
+		return initToken(doubleCharType, token.TokenLiteral(ch+secondCh))
+	}
+	return initToken(firstCharType, token.TokenLiteral(ch))
 }
