@@ -71,9 +71,9 @@ func (l *Lexer) NextToken() token.Token {
 			if string(l.ch) == value {
 				switch value {
 				case "=": // ==
-					tok = l.makeDoubleToken(key, token.ASSIGN, token.EQUAL)
-				case "!": // (!=
-					tok = l.makeDoubleToken(key, token.ASSIGN, token.NOT_EQUAL)
+					tok = l.makeTwoCharToken(key, token.ASSIGN, token.EQUAL)
+				case "!": // !=
+					tok = l.makeTwoCharToken(key, token.ASSIGN, token.NOT_EQUAL)
 				default:
 					tok = initToken(key, token.TokenLiteral(value))
 				}
@@ -107,12 +107,12 @@ func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-func (l *Lexer) makeDoubleToken(firstCharType token.TokenType, secondCharType token.TokenType, doubleCharType token.TokenType) token.Token {
+func (l *Lexer) makeTwoCharToken(firstChar token.TokenType, secondChar token.TokenType, doubleChar token.TokenType) token.Token {
 	ch := string(l.ch)
-	secondCh := token.Tokens[secondCharType]
+	secondCh := token.Tokens[secondChar]
 	if string(l.peekChar()) == secondCh {
 		l.readChar()
-		return initToken(doubleCharType, token.TokenLiteral(ch+secondCh))
+		return initToken(doubleChar, token.TokenLiteral(ch+secondCh))
 	}
-	return initToken(firstCharType, token.TokenLiteral(ch))
+	return initToken(firstChar, token.TokenLiteral(ch))
 }
