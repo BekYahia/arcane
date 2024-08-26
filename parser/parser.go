@@ -5,6 +5,7 @@ import (
 	"arcane/lexer"
 	"arcane/token"
 	"fmt"
+	"strconv"
 )
 
 type Parser struct {
@@ -18,7 +19,7 @@ type Parser struct {
 }
 
 type (
-	prefixParseFn func() ast.Expression               // no lef side, no argument
+	prefixParseFn func() ast.Expression               // no left side, no argument
 	infixParseFn  func(ast.Expression) ast.Expression // pass the left side as an argument
 )
 
@@ -42,6 +43,7 @@ func Init(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// twice so current and peek tokens are set
 	p.nextToken()
@@ -51,6 +53,18 @@ func Init(l *lexer.Lexer) *Parser {
 }
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.currentToken, Value: string(p.currentToken.Literal)}
+}
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	literal := &ast.IntegralLiteral{Token: p.currentToken}
+
+	value, err := strconv.ParseInt(string(p.currentToken.Literal), 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currentToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	literal.Value = value
+	return literal
 }
 
 func (p *Parser) Errors() []string {

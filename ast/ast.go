@@ -52,6 +52,19 @@ func (i *Identifier) String() string {
 	return i.Value
 }
 
+type IntegralLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (il *IntegralLiteral) expressionNode() {}
+func (il *IntegralLiteral) TokenLiteral() token.TokenLiteral {
+	return il.Token.Literal
+}
+func (il *IntegralLiteral) String() string {
+	return string(il.Token.Literal)
+}
+
 // :: Let Statement
 type LetStatement struct {
 	Token token.Token // -> token.LET
