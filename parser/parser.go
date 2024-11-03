@@ -47,6 +47,16 @@ func Init(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.NOT, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.DIVIDE, p.parseInfixExpression)
+	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpression)
+
 	// twice so current and peek tokens are set
 	p.nextToken()
 	p.nextToken()
@@ -78,6 +88,19 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	p.nextToken()
 
 	expression.Right = p.parseExpression(PREFIX)
+
+	return expression
+}
+
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.currentToken,
+		Operator: string(p.currentToken.Literal),
+		Left:     left,
+	}
+	precedence := p.currentPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
 
 	return expression
 }
@@ -208,10 +231,45 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 	leftExpression := prefix()
+
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
+			return leftExpression
+		}
+		p.nextToken()
+		leftExpression = infix(leftExpression)
+	}
+
 	return leftExpression
 }
 
 func (p *Parser) noPrefixParseFnError(t token.TokenLiteral) {
 	msg := fmt.Sprintf("no prefix parse function for %s found", t)
 	p.errors = append(p.errors, msg)
+}
+
+var precedences = map[token.TokenType]int{
+	token.EQUAL:     EQUALS,
+	token.NOT_EQUAL: EQUALS,
+	token.LT:        LESS_GRATER,
+	token.GT:        LESS_GRATER,
+	token.PLUS:      SUM,
+	token.MINUS:     SUM,
+	token.DIVIDE:    PRODUCT,
+	token.MULTIPLY:  PRODUCT,
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+func (p *Parser) currentPrecedence() int {
+	if p, ok := precedences[p.currentToken.Type]; ok {
+		return p
+	}
+	return LOWEST
 }
