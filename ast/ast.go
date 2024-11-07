@@ -65,6 +65,17 @@ func (il *IntegralLiteral) String() string {
 	return string(il.Token.Literal)
 }
 
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode() {}
+func (b *Boolean) TokenLiteral() token.TokenLiteral {
+	return b.Token.Literal
+}
+func (b *Boolean) String() string { return string(b.TokenLiteral()) }
+
 // :: Let Statement
 type LetStatement struct {
 	Token token.Token // -> token.LET
