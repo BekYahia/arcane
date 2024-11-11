@@ -355,23 +355,32 @@ func TestParsingInfixExpression(t *testing.T) {
 			t.Fatalf("program.Statement[0] dose not satisfy ast.ExpressionStatement, got %T\n", program.Statements[0])
 		}
 
-		exp, ok := stmt.Expression.(*ast.InfixExpression)
-		if !ok {
-			t.Fatalf("stmt.Expression does not satisfy ast.InfixExpression, got %T", stmt.Expression)
-		}
-
-		if !testLiteralExpression(t, exp.Left, tt.leftValue) {
-			return
-		}
-
-		if exp.Operator != tt.operator {
-			t.Fatalf("exp.Operator is not %s, got %s", tt.operator, exp.Operator)
-		}
-
-		if !testLiteralExpression(t, exp.Right, tt.rightValue) {
+		if !testInfixExpression(t, stmt.Expression, tt.leftValue, tt.operator, tt.rightValue) {
 			return
 		}
 	}
+}
+
+func testInfixExpression(t *testing.T, expression ast.Expression, left interface{}, operator string, right interface{}) bool {
+	exp, ok := expression.(*ast.InfixExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression does not satisfy ast.InfixExpression, got %T", expression)
+	}
+
+	if !testLiteralExpression(t, exp.Left, left) {
+		return false
+	}
+
+	if exp.Operator != operator {
+		t.Fatalf("exp.Operator is not %s, got %s", operator, exp.Operator)
+		return false
+	}
+
+	if !testLiteralExpression(t, exp.Right, right) {
+		return false
+	}
+
+	return true
 }
 
 func TestOperatorPrecedenceParsing(t *testing.T) {
@@ -455,5 +464,56 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		if actual != tt.expectedValue {
 			t.Errorf("expected %s, got %s", tt.expectedValue, actual)
 		}
+	}
+}
+
+func TestIfExpression(t *testing.T) {
+	input := "if (x < y) { y }"
+	l := lexer.Init(input)
+	p := Init(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements, got %d\n", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt.Statement[0] does not satisfy ast.ExpressionStatement, got %T\n", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression does not satisfy ast.IfExpression, got %T\n", stmt.Expression)
+	}
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
+	}
+}
+func TestIfElseExpression(t *testing.T) {
+	input := "if (x < y) { y } else { x }"
+	l := lexer.Init(input)
+	p := Init(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements, got %d\n", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt.Statement[0] does not satisfy ast.ExpressionStatement, got %T\n", program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression does not satisfy ast.IfExpression, got %T\n", stmt.Expression)
+	}
+
+	if !testInfixExpression(t, exp.Condition, "x", "<", "y") {
+		return
 	}
 }
