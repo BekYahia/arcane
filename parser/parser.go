@@ -61,6 +61,7 @@ func Init(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.EQUAL, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.LEFT_PARENTHESIS, p.parseCallExpression)
 
 	// twice so current and peek tokens are set
 	p.nextToken()
@@ -303,6 +304,38 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	return identifiers
 }
 
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	expression := &ast.CallExpression{
+		Token:     p.currentToken,
+		Function:  function,
+		Arguments: p.parseCallArguments(),
+	}
+	return expression
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	var arguments []ast.Expression
+	if p.peekTokenIs(token.RIGHT_PARENTHESIS) {
+		p.nextToken()
+		return arguments
+	}
+
+	p.nextToken()
+	arguments = append(arguments, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		arguments = append(arguments, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectedPeek(token.RIGHT_PARENTHESIS) {
+		return nil
+	}
+	return arguments
+}
+
+// Helpers
 func (p *Parser) currentTokenIs(t token.TokenType) bool {
 	return p.currentToken.Type == t
 }
