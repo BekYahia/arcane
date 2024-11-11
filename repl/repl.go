@@ -2,7 +2,7 @@ package repl
 
 import (
 	"arcane/lexer"
-	"arcane/token"
+	"arcane/parser"
 	"bufio"
 	"fmt"
 	"io"
@@ -20,10 +20,17 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		l := lexer.Init(userInput)
+		p := parser.Init(l)
+		program := p.ParseProgram()
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		if len(p.Errors()) != 0 {
+			_, _ = io.WriteString(out, "Parser Errors:\n")
+			for _, msg := range p.Errors() {
+				_, _ = io.WriteString(out, "\t - "+msg+"\n")
+			}
+			continue
 		}
-
+		_, _ = io.WriteString(out, program.String())
+		_, _ = io.WriteString(out, "\n")
 	}
 }
