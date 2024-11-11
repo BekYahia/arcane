@@ -50,6 +50,7 @@ func Init(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LEFT_PARENTHESIS, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -257,6 +258,51 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return block
 }
 
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	functionLiteral := &ast.FunctionLiteral{
+		Token: p.currentToken,
+	}
+	if !p.expectedPeek(token.LEFT_PARENTHESIS) {
+		return nil
+	}
+	functionLiteral.Parameters = p.parseFunctionParameters()
+	if !p.expectedPeek(token.LEFT_CURLY_BRACKETS) {
+		return nil
+	}
+	functionLiteral.Body = p.parseBlockStatement()
+	return functionLiteral
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	var identifiers []*ast.Identifier
+
+	if p.peekTokenIs(token.RIGHT_PARENTHESIS) {
+		p.nextToken()
+		return identifiers
+	}
+
+	p.nextToken()
+
+	identifiers = append(identifiers, &ast.Identifier{
+		Token: p.currentToken,
+		Value: string(p.currentToken.Literal),
+	})
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		identifiers = append(identifiers, &ast.Identifier{
+			Token: p.currentToken,
+			Value: string(p.currentToken.Literal),
+		})
+	}
+	if !p.expectedPeek(token.RIGHT_PARENTHESIS) {
+		return nil
+	}
+
+	return identifiers
+}
+
 func (p *Parser) currentTokenIs(t token.TokenType) bool {
 	return p.currentToken.Type == t
 }
@@ -323,14 +369,15 @@ func (p *Parser) noPrefixParseFnError(t token.TokenLiteral) {
 }
 
 var precedences = map[token.TokenType]int{
-	token.EQUAL:     EQUALS,
-	token.NOT_EQUAL: EQUALS,
-	token.LT:        LESS_GRATER,
-	token.GT:        LESS_GRATER,
-	token.PLUS:      SUM,
-	token.MINUS:     SUM,
-	token.DIVIDE:    PRODUCT,
-	token.MULTIPLY:  PRODUCT,
+	token.EQUAL:            EQUALS,
+	token.NOT_EQUAL:        EQUALS,
+	token.LT:               LESS_GRATER,
+	token.GT:               LESS_GRATER,
+	token.PLUS:             SUM,
+	token.MINUS:            SUM,
+	token.DIVIDE:           PRODUCT,
+	token.MULTIPLY:         PRODUCT,
+	token.LEFT_PARENTHESIS: CALL,
 }
 
 func (p *Parser) peekPrecedence() int {

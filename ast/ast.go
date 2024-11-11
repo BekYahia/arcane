@@ -3,6 +3,7 @@ package ast
 import (
 	"arcane/token"
 	"bytes"
+	"strings"
 )
 
 type Node interface {
@@ -215,5 +216,26 @@ func (bs *BlockStatement) String() string {
 		out.WriteString(s.String())
 	}
 
+	return out.String()
+}
+
+type FunctionLiteral struct {
+	Token      token.Token // 'fn'
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()                  {}
+func (fl *FunctionLiteral) TokenLiteral() token.TokenLiteral { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+	var params []string
+
+	out.WriteString("fn")
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString("(" + strings.Join(params, ", ") + " )")
+	out.WriteString(fl.Body.String())
 	return out.String()
 }

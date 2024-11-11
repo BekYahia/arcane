@@ -517,3 +517,77 @@ func TestIfElseExpression(t *testing.T) {
 		return
 	}
 }
+
+func TestFunctionLiteralExpression(t *testing.T) {
+	input := "fn(x, y) {x + y;}"
+	l := lexer.Init(input)
+	p := Init(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements, got %d\n", 1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt.Expression does not satisfy ast.ExpressionStatement, got %T\n", program.Statements[0])
+	}
+	exp, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression does not satisfy ast.FunctionLiteral, got %T\n", stmt.Expression)
+	}
+	if len(exp.Parameters) != 2 {
+		t.Fatalf("exp.Parameters does not contain %d parameters, got %d\n", 2, len(exp.Parameters))
+	}
+	if !testLiteralExpression(t, exp.Parameters[0], "x") {
+		return
+	}
+	if !testIdentifierLiteral(t, exp.Parameters[1], "y") {
+		return
+	}
+	if len(exp.Body.Statements) != 1 {
+		t.Fatalf("exp.Body.Statements does not contain %d statements, got %d\n", 1, len(exp.Body.Statements))
+	}
+	bodyStmt, ok := exp.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("bodyStmt.Expression does not satisfy ast.ExpressionStatement, got %T\n", exp.Body.Statements[0])
+	}
+	if !testInfixExpression(t, bodyStmt.Expression, "x", "+", "y") {
+		return
+	}
+}
+
+func TestFunctionParameterExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		{input: "fn() {}", expected: []string{}},
+		{input: "fn(x) {}", expected: []string{"x"}},
+		{input: "fn(x, y, z) {}", expected: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.Init(tt.input)
+		p := Init(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("prgrams.Statements[0] does not satisfy ast.ExpressionStatement, got %T\n", program.Statements[0])
+		}
+		exp, ok := stmt.Expression.(*ast.FunctionLiteral)
+		if !ok {
+			t.Fatalf("stmt.Expression does not satisfy ast.FunctionLiteral, got %T\n", stmt.Expression)
+		}
+		if len(exp.Parameters) != len(tt.expected) {
+			t.Fatalf("wrong parameters length. expected %d, got %d\n", len(tt.expected), len(exp.Parameters))
+		}
+		for i, ident := range exp.Parameters {
+			testLiteralExpression(t, ident, tt.expected[i])
+		}
+	}
+
+}
